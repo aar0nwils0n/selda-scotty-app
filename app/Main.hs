@@ -1,6 +1,6 @@
 module Main where
 
-import Web.Scotty as Scotty (get, post, scotty, json, param, jsonData, status)
+import Web.Scotty as Scotty (get, post, scotty, json, param, jsonData, status, notFound, defaultHandler)
 import Data.Aeson 
 import Database.Selda
 import Database.Selda.SQLite
@@ -11,7 +11,7 @@ import GHC.Generics
 import qualified ReqCustomer 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Database.Selda.Backend
-import Network.HTTP.Types.Status (notFound404)
+import Network.HTTP.Types.Status (notFound404, internalServerError500)
 import FullOrder
 
 main = 
@@ -19,6 +19,10 @@ main =
         conn <- sqliteOpen "customers.sqlite"
         runSeldaT createTables conn
         scotty 3000 $ do
+            defaultHandler $ \e -> do
+                status internalServerError500
+                liftIO $ print e
+                Scotty.json e
             get "/customer" $ do
                 customer <- liftIO $ runSeldaT (query getCustomers) conn
                 Scotty.json customer
@@ -32,18 +36,22 @@ main =
                         Scotty.json customer
             post "/customer" $ do
                 req <- jsonData
-                liftIO $ runSeldaT (insert_ customers [reqToCustomer req]) conn
-                Scotty.json req
+                let customer = reqToCustomer req
+                id <- liftIO $ runSeldaT (insertWithPK customers [customer]) conn
+                Scotty.json $ fromId id
             post "/order" $ do
                 req <- jsonData
-                liftIO $ runSeldaT (insert_ orders [reqToOrder req]) conn
+                let order = reqToOrder req
+                id <- liftIO $ runSeldaT (insertWithPK orders [order]) conn
+                Scotty.json $ fromId id
             get "/order" $ do
                 fullOrders <- liftIO $ runSeldaT (query getOrdersWithCustomer) conn
                 Scotty.json $ orderTupToFullOrder fullOrders
+            notFound $ do
+                status notFound404
+                Scotty.json Null
 
                 
-                
-
 createTables = do
     tryCreateTable customers
     tryCreateTable orders

@@ -15,7 +15,7 @@ data Customer = Customer { customerID :: ID Customer
 instance SqlRow Customer
 
 reqToCustomer req = Customer {
-    customerID = toId 0
+    customerID = def
     , name = ReqCustomer.name req
     , country = ReqCustomer.country req
 }

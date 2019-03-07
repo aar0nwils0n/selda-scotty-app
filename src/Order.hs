@@ -12,6 +12,13 @@ data Order = Order { orderID :: ID Order
     , orderTotal :: Double 
 } deriving (Generic, Show)
 
+instance ToJSON Order where
+    toJSON (Order customerID relatedCustomer orderTotal) =
+        object [ "orderID"  .= fromId customerID
+                , "relatedCustomer" .= fromId relatedCustomer
+                , "orderTotal" .= orderTotal
+            ]
+
 data OrderReq = OrderReq {
     reqRelatedCustomer :: Int
     , reqOrderTotal :: Double
@@ -24,7 +31,7 @@ instance FromJSON OrderReq where
 
 instance SqlRow Order
 
-reqToOrder req = Order { orderID = toId 0
+reqToOrder req = Order { orderID = def
     , relatedCustomer = toId $ reqRelatedCustomer $ req 
     , orderTotal = reqOrderTotal req }
 
