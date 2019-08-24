@@ -2,7 +2,7 @@ module Order where
 
 import GHC.Generics (Generic)
 import Database.Selda hiding (Order)
-import Database.Selda.SQLite
+import Database.Selda.PostgreSQL
 import Database.Selda.Migrations
 import Customer
 import Data.Aeson 

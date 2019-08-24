@@ -4,7 +4,7 @@ import Data.Aeson
 import qualified ReqCustomer 
 import GHC.Generics
 import Database.Selda
-import Database.Selda.SQLite
+import Database.Selda.PostgreSQL
 import Database.Selda.Migrations
 
 data Customer = Customer { customerID :: ID Customer
