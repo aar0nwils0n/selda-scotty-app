@@ -14,6 +14,7 @@ default-extensions:
 - OverloadedStrings
 - DeriveGeneric
 - OverloadedLabels
+- FlexibleContexts
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -32,6 +33,7 @@ dependencies:
 - selda
 - text
 - http-types
+- resource-pool
 
 library:
   source-dirs: src

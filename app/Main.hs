@@ -13,22 +13,24 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Database.Selda.Backend
 import Network.HTTP.Types.Status (notFound404, internalServerError500)
 import FullOrder
+import Data.Pool
 
 main = 
     do
-        conn <- sqliteOpen "customers.sqlite"
-        runSeldaT createTables conn
+        pool <- createPool (sqliteOpen "customers.sqlite") seldaClose 1 1 5
+        let runDbAction action = withResource pool (runSeldaT action)
+        runDbAction createTables
         scotty 3000 $ do
             defaultHandler $ \e -> do
                 status internalServerError500
                 liftIO $ print e
                 Scotty.json e
             get "/customer" $ do
-                customer <- liftIO $ runSeldaT (query getCustomers) conn
+                customer <- liftIO $ runDbAction (query getCustomers)
                 Scotty.json customer
             get "/customer/:id" $ do
                 id <- param "id"
-                customers <- liftIO $ runSeldaT (query $ getCustomer id) conn
+                customers <- liftIO $ runDbAction (query $ getCustomer id)
                 case customers of 
                     [] ->
                         status notFound404
@@ -37,15 +39,15 @@ main =
             post "/customer" $ do
                 req <- jsonData
                 let customer = reqToCustomer req
-                id <- liftIO $ runSeldaT (insertWithPK customers [customer]) conn
+                id <- liftIO $ runDbAction (insertWithPK customers [customer])
                 Scotty.json $ fromId id
             post "/order" $ do
                 req <- jsonData
                 let order = reqToOrder req
-                id <- liftIO $ runSeldaT (insertWithPK orders [order]) conn
+                id <- liftIO $ runDbAction (insertWithPK orders [order])
                 Scotty.json $ fromId id
             get "/order" $ do
-                fullOrders <- liftIO $ runSeldaT (query getOrdersWithCustomer) conn
+                fullOrders <- liftIO $ runDbAction (query getOrdersWithCustomer)
                 Scotty.json $ orderTupToFullOrder fullOrders
             notFound $ do
                 status notFound404
